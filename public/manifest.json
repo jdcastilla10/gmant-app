@@ -1,0 +1,9 @@
+{
+  "name": "GMANT - Grupo Recordar",
+  "short_name": "GMANT",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#30508F",
+  "background_color": "#1a1a1a",
+  "icons": []
+}

@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a1a; color: #C7C7C7; min-height: 100vh; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #222; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+@layer components {
+  .btn-primary  { @apply bg-accent text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent2 transition-all cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-secondary{ @apply bg-bg4 text-gt1 px-4 py-2 rounded-lg text-sm font-medium border border-gborder2 hover:bg-bg5 transition-all cursor-pointer; }
+  .btn-danger   { @apply bg-red-900/20 text-red-400 px-4 py-2 rounded-lg text-sm font-medium border border-red-800/30 hover:bg-red-900/30 transition-all cursor-pointer; }
+  .btn-green    { @apply bg-ggreen/20 text-ggreen px-4 py-2 rounded-lg text-sm font-medium border border-ggreen/30 hover:bg-ggreen/30 transition-all cursor-pointer; }
+  .btn-sm       { @apply px-2.5 py-1.5 text-xs; }
+  .input-field  { @apply bg-bg3 border border-gborder2 rounded-lg text-gt1 px-3 py-2 text-sm w-full outline-none focus:border-accent2 focus:ring-1 focus:ring-accent2/20 transition-all; }
+  .card         { @apply bg-bg2 border border-gborder rounded-xl p-4; }
+  .tag-prev     { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent/20 text-accent3 border border-accent/30; }
+  .tag-corr     { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-900/20 text-red-400 border border-red-800/30; }
+  .tag-pend     { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-900/20 text-amber-400 border border-amber-700/30; }
+  .tag-done     { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-900/20 text-ggreen border border-green-800/30; }
+  .tag-prog     { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-900/20 text-purple-400 border border-purple-800/30; }
+  .chip         { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-bg4 text-gt2 border border-gborder2; }
+  .section-title{ @apply text-xl font-bold text-gt1 tracking-tight; }
+  .section-sub  { @apply text-sm text-gt2 mt-1; }
+  .alert-err    { @apply bg-red-900/10 text-red-400 border border-red-800/25 rounded-lg p-3 text-sm mb-3; }
+  .alert-ok     { @apply bg-green-900/10 text-ggreen border border-green-800/25 rounded-lg p-3 text-sm mb-3; }
+  .form-label   { @apply block text-xs text-gt2 font-medium mb-1.5 tracking-wide; }
+  .th           { @apply bg-bg3 text-gt2 font-semibold px-3 py-2.5 text-left text-xs uppercase tracking-wider border-b border-gborder2; }
+  .td           { @apply px-3 py-2.5 border-b border-gborder text-sm text-gt1 align-middle; }
+}
