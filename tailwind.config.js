@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg:      '#2a1a1a',
+        bg:      '#1a1a1a',
         bg2:     '#222222',
         bg3:     '#2a2a2a',
         bg4:     '#333333',
