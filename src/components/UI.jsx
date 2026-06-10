@@ -5,8 +5,8 @@ export function Modal({ title, onClose, children, size = 'md' }) {
   const sizes = { sm:'max-w-md', md:'max-w-2xl', lg:'max-w-4xl', xl:'max-w-6xl' }
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-[1000] p-4" onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className={`bg-bg2 border border-gborder2 rounded-2xl p-7 w-full ${sizes[size]} max-h-[90vh] overflow-y-auto shadow-2xl`}>
-        <div className="flex justify-between items-center mb-6">
+      <div className={`bg-bg2 border border-gborder2 rounded-2xl p-4 sm:p-7 w-full ${sizes[size]} max-h-[90vh] overflow-y-auto shadow-2xl`}>
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
           <h3 className="text-lg font-bold text-gt1">{title}</h3>
           <button onClick={onClose} className="text-gt3 hover:text-gt1 text-xl leading-none transition-colors">✕</button>
         </div>

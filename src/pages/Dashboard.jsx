@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { fmt, fmtDate, MESES } from '../utils/format'
 import { StatCard, Tag } from '../components/UI'
+import { BRAND } from '../theme'
 
 export default function Dashboard() {
   const { data } = useApp()
@@ -46,18 +47,18 @@ export default function Dashboard() {
         <p className="section-sub">Resumen ejecutivo — {new Date().toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <StatCard icon="⚙" value={activos.length}   label="Total Activos"   color="blue"/>
         <StatCard icon="✅" value={completados}       label="Completados"    color="green"/>
         <StatCard icon="⏳" value={pendientes}        label="Pendientes"     color="amber"/>
         <StatCard icon="💰" value={fmt(gastoTotal)}   label="Gasto Total"    color="purple"/>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         {/* Distribución de gastos */}
         <div className="card">
           <h3 className="text-xs font-bold text-gt2 uppercase tracking-widest mb-5">Distribución de Gastos</h3>
-          {[{l:'Preventivo',v:gastoPrev,c:'#4a6db5',p:pctPrev,cnt:mantenimientos.filter(m=>m.tipo==='Preventivo').length},
+          {[{l:'Preventivo',v:gastoPrev,c:BRAND.primaryHover,p:pctPrev,cnt:mantenimientos.filter(m=>m.tipo==='Preventivo').length},
             {l:'Correctivo',v:gastoCorr,c:'#c0392b',p:pctCorr,cnt:mantenimientos.filter(m=>m.tipo==='Correctivo').length}].map((g,i)=>(
             <div key={i} className="mb-4">
               <div className="flex justify-between mb-1.5">

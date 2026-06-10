@@ -7,6 +7,7 @@ import {
 } from '../utils/api'
 import { fmt } from '../utils/format'
 import { Modal, ConfirmDel, Tag, Empty } from '../components/UI'
+import { BRAND } from '../theme'
 
 // ── SEDES ─────────────────────────────────────────────────
 export function Sedes() {
@@ -35,16 +36,16 @@ export function Sedes() {
   }
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-start gap-3 mb-6">
         <div><h2 className="section-title">Sedes</h2><p className="section-sub">Plantas y ubicaciones registradas</p></div>
         <button className="btn-primary" onClick={()=>{setForm({nombre:'',ciudad:'',direccion:''});setModal('form')}}>+ Nueva Sede</button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sedes.map(s=>(
           <div key={s.id} className="card relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-xl" style={{background:'linear-gradient(90deg,#30508F,#98B752)'}}/>
+            <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-xl" style={{background:`linear-gradient(90deg,${BRAND.primary},${BRAND.primaryLight})`}}/>
             <div className="flex justify-between items-start mb-4 mt-2">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl" style={{background:'rgba(48,80,143,.15)',border:'1px solid rgba(48,80,143,.25)'}}>🏭</div>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl" style={{background:'rgba(108,179,60,.15)',border:'1px solid rgba(108,179,60,.25)'}}>🏭</div>
               <div className="flex gap-2">
                 <button className="btn-secondary btn-sm" onClick={()=>{setForm({...s});setModal('form')}}>✎</button>
                 <button className="btn-danger btn-sm" onClick={()=>setDel(s)}>✕</button>
@@ -111,12 +112,13 @@ export function Contratistas() {
   }
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-start gap-3 mb-6">
         <div><h2 className="section-title">Contratistas</h2><p className="section-sub">Empresas y proveedores de mantenimiento</p></div>
         <button className="btn-primary" onClick={()=>{setForm({nombre:'',nit:'',email:'',telefono:''});setModal('form')}}>+ Nuevo Contratista</button>
       </div>
       <div className="bg-bg2 border border-gborder rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={{minWidth:600}}>
           <thead><tr>{['Empresa','NIT','Email','Teléfono','Trabajos','Gasto Total',''].map(h=><th key={h} className="th">{h}</th>)}</tr></thead>
           <tbody>
             {contratistas.length===0 ? <tr><td colSpan={7}><Empty text="Sin contratistas registrados"/></td></tr> :
@@ -137,6 +139,7 @@ export function Contratistas() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
       {modal==='form' && (
         <Modal title={form.id?'Editar Contratista':'Nuevo Contratista'} onClose={()=>setModal(null)} size="sm">
@@ -200,14 +203,15 @@ export function Usuarios() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-start gap-3 mb-6">
         <div><h2 className="section-title">Usuarios</h2><p className="section-sub">Gestión de accesos al sistema</p></div>
         <button className="btn-primary" onClick={() => { setForm({ username:'', password:'', nombre:'', rol:'tecnico', email:'', activo:true }); setMsg(''); setModal('form') }}>
           + Nuevo Usuario
         </button>
       </div>
       <div className="bg-bg2 border border-gborder rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={{minWidth:560}}>
           <thead><tr>{['Nombre','Usuario','Email','Rol','Estado',''].map(h=><th key={h} className="th">{h}</th>)}</tr></thead>
           <tbody>
             {usuarios.length === 0
@@ -217,7 +221,7 @@ export function Usuarios() {
                   <td className="td">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg,#30508F,#4a6db5)' }}>
+                        style={{ background: `linear-gradient(135deg,${BRAND.primary},${BRAND.primaryHover})` }}>
                         {u.nombre.charAt(0).toUpperCase()}
                       </div>
                       <span className="font-medium">{u.nombre}</span>
@@ -238,6 +242,7 @@ export function Usuarios() {
             }
           </tbody>
         </table>
+        </div>
       </div>
       {modal === 'form' && (
         <Modal title={form.id ? 'Editar Usuario' : 'Nuevo Usuario'} onClose={() => setModal(null)} size="sm">

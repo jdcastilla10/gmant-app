@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from './context/AppContext'
+import { BRAND } from './theme'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Activos from './pages/Activos'
@@ -19,29 +20,55 @@ const NAV = [
   { id:'usuarios',      label:'Usuarios',          icon:'👥', adminOnly:true },
 ]
 
-const PAGES = {
-  dashboard:      () => <Dashboard/>,
-  activos:        () => <Activos/>,
-  mantenimientos: () => <Mantenimientos/>,
-  historial:      () => <Historial/>,
-  cronograma:     () => <Cronograma/>,
-  sedes:          () => <Sedes/>,
-  contratistas:   () => <Contratistas/>,
-  usuarios:       () => <Usuarios/>,
-}
-
 export default function App() {
   const { session, logout, loading, data } = useApp()
   const [page, setPage]           = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-bg"><div className="w-8 h-8 border-2 border-gborder2 border-t-accent2 rounded-full animate-spin"/></div>
+  // Detectar QR: ?activo=UUID en la URL
+  const [pendingActivoId, setPendingActivoId] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('activo') || null
+  })
+
+  const clearPending = () => {
+    setPendingActivoId(null)
+    window.history.replaceState({}, '', window.location.pathname)
+  }
+
+  // Cuando hay sesión y viene de QR → ir a mantenimientos
+  useEffect(() => {
+    if (session && pendingActivoId) {
+      setPage('mantenimientos')
+    }
+  }, [session, pendingActivoId])
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-bg">
+      <div className="w-8 h-8 border-2 border-gborder2 border-t-accent2 rounded-full animate-spin"/>
+    </div>
+  )
   if (!session) return <Login/>
 
   const pendientes = data.mantenimientos.filter(m=>m.estado==='Pendiente').length
   const navItems   = NAV.filter(n=>!n.adminOnly||session.rol==='admin')
 
   const navigate = (id) => { setPage(id); setSidebarOpen(false) }
+
+  const renderPage = () => {
+    if (page === 'mantenimientos')
+      return <Mantenimientos pendingActivoId={pendingActivoId} onClearPending={clearPending}/>
+    const map = {
+      dashboard:    <Dashboard/>,
+      activos:      <Activos/>,
+      historial:    <Historial/>,
+      cronograma:   <Cronograma/>,
+      sedes:        <Sedes/>,
+      contratistas: <Contratistas/>,
+      usuarios:     <Usuarios/>,
+    }
+    return map[page] ?? <Dashboard/>
+  }
 
   return (
     <div className="min-h-screen bg-bg">
@@ -50,7 +77,7 @@ export default function App() {
         onClick={()=>setSidebarOpen(o=>!o)}
         aria-label="Menú"
         className="fixed top-3 left-3 z-[500] w-10 h-10 rounded-lg flex flex-col items-center justify-center gap-1.5 border-none cursor-pointer shadow-lg transition-all hover:brightness-110"
-        style={{background:'#30508F',boxShadow:'0 2px 10px rgba(48,80,143,.4)'}}>
+        style={{background:BRAND.primary,boxShadow:`0 2px 10px ${BRAND.primary}66`}}>
         <span className="block w-5 h-0.5 bg-white rounded"/>
         <span className="block w-5 h-0.5 bg-white rounded"/>
         <span className="block w-5 h-0.5 bg-white rounded"/>
@@ -66,7 +93,9 @@ export default function App() {
         {/* Logo */}
         <div className="px-5 pt-5 pb-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg text-white flex-shrink-0" style={{background:'linear-gradient(135deg,#30508F,#4a6db5)',boxShadow:'0 3px 10px rgba(48,80,143,.4)'}}>⚙</div>
+            <div className="w-9 h-9 rounded-lg overflow-hidden bg-white flex items-center justify-center flex-shrink-0" style={{boxShadow:`0 3px 10px ${BRAND.primary}66`}}>
+              <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover"/>
+            </div>
             <div>
               <div className="text-sm font-extrabold text-gt1 leading-tight tracking-tight">GRUPO RECORDAR</div>
               <div className="text-xs text-gt3 mt-0.5">Gestión de Mantenimiento</div>
@@ -93,7 +122,7 @@ export default function App() {
         {/* User */}
         <div className="px-4 py-3 border-t border-gborder">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{background:'linear-gradient(135deg,#30508F,#98B752)'}}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{background:`linear-gradient(135deg,${BRAND.primary},${BRAND.primaryDark})`}}>
               {session.nombre?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -106,8 +135,8 @@ export default function App() {
       </div>
 
       {/* Main content */}
-      <main className="pt-16 px-7 pb-7 min-h-screen">
-        {(PAGES[page] ?? PAGES.dashboard)()}
+      <main className="pt-16 px-3 sm:px-5 md:px-7 pb-6 md:pb-7 min-h-screen">
+        {renderPage()}
       </main>
 
       {/* Version tag */}

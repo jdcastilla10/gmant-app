@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import { apiCreateMantenimiento, apiUpdateMantenimiento, apiDeleteMantenimiento, apiUploadDoc } from '../utils/api'
 import { fmt, fmtDate, today } from '../utils/format'
@@ -7,28 +7,72 @@ import { Modal, ConfirmDel, Tag, Empty, SearchBar, Field, FileUpload } from '../
 const emptyForm = {
   activoId:'', sedeId:'', tipo:'Preventivo', estado:'Pendiente',
   fechaProg:today(), fechaEjec:'', descripcion:'', gasto:0,
-  contraId:'', tecnico:'', responsable:'', docSoporte:'',
+  contraId:'', tecnico:'', responsable:'', tecnicoAsignadoId:'', docSoporte:'',
   docUrl:'', docNombre:'', ordenCompra:'', observaciones:''
 }
 
-export default function Mantenimientos() {
+const emptyComplete = {
+  id:'', fechaEjec:'', descripcion:'', tecnico:'', observaciones:'',
+  docSoporte:'', docUrl:'', docNombre:'',
+}
+
+export default function Mantenimientos({ pendingActivoId, onClearPending }) {
   const { data, reload, session } = useApp()
-  const { activos, sedes, mantenimientos, contratistas } = data
-  const [modal,      setModal]      = useState(null)
-  const [detail,     setDetail]     = useState(null)
-  const [del,        setDel]        = useState(null)
-  const [form,       setForm]       = useState(emptyForm)
+  const { activos, sedes, mantenimientos, contratistas, usuarios } = data
+  const isTecnico = session.rol === 'tecnico'
+  const tecnicos  = usuarios.filter(u => u.rol === 'tecnico' && u.activo)
+
+  const [modal,        setModal]        = useState(null) // 'form' | 'complete'
+  const [detail,       setDetail]       = useState(null)
+  const [del,          setDel]          = useState(null)
+  const [form,         setForm]         = useState(emptyForm)
+  const [completeForm, setCompleteForm] = useState(emptyComplete)
   const [msg,        setMsg]        = useState('')
   const [search,     setSearch]     = useState('')
   const [filtroTipo, setFiltroTipo] = useState('Todos')
   const [filtroEst,  setFiltroEst]  = useState('Todos')
   const [filtroSede, setFiltroSede] = useState('Todas')
 
-  const f = v => setForm(p => ({ ...p, ...v }))
+  const f  = v => setForm(p => ({ ...p, ...v }))
+  const fc = v => setCompleteForm(p => ({ ...p, ...v }))
 
   // Helpers — el backend devuelve activo_id y sede_id en snake_case
   const getActivo = id => activos.find(a => a.id === id)
   const getSede   = id => sedes.find(s => s.id === id)
+
+  // Abrir modal de "completar" (técnico) con los datos del mantenimiento
+  const openComplete = (m) => {
+    setCompleteForm({
+      id:            m.id,
+      fechaEjec:     m.fecha_ejec ? m.fecha_ejec.toString().split('T')[0] : today(),
+      descripcion:   m.descripcion   || '',
+      tecnico:       m.tecnico       || session?.nombre || '',
+      observaciones: m.observaciones || '',
+      docSoporte:    m.doc_soporte   || '',
+      docUrl:        m.doc_url       || '',
+      docNombre:     m.doc_nombre    || '',
+    })
+    setMsg('')
+    setModal('complete')
+  }
+
+  // Abrir formulario automáticamente al escanear QR
+  useEffect(() => {
+    if (pendingActivoId && activos.length > 0) {
+      const act = activos.find(a => a.id === pendingActivoId)
+      if (!act) return
+      if (isTecnico) {
+        const m = mantenimientos.find(x => x.activo_id === act.id && x.estado !== 'Completado')
+        if (m) openComplete(m)
+        else setMsg('No tienes mantenimientos pendientes asignados para este activo.')
+      } else {
+        setForm({ ...emptyForm, activoId: act.id, sedeId: act.sede_id || '' })
+        setMsg('')
+        setModal('form')
+      }
+      onClearPending?.()
+    }
+  }, [pendingActivoId, activos])
 
   const filtered = useMemo(() => mantenimientos.filter(m => {
     // usar snake_case que viene del backend
@@ -43,10 +87,11 @@ export default function Mantenimientos() {
       matchS &&
       (filtroTipo === 'Todos' || m.tipo === filtroTipo) &&
       (filtroEst  === 'Todos' || m.estado === filtroEst) &&
-      (filtroSede === 'Todas' || m.sede_id === filtroSede)
+      (filtroSede === 'Todas' || m.sede_id === filtroSede) &&
+      (!isTecnico || m.estado !== 'Completado')
     )
   }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)),
-  [mantenimientos, search, filtroTipo, filtroEst, filtroSede])
+  [mantenimientos, search, filtroTipo, filtroEst, filtroSede, isTecnico])
 
   // Al seleccionar activo, auto-rellenar sede
   const onActivo = id => {
@@ -69,6 +114,7 @@ export default function Mantenimientos() {
       contraId:     m.contratista_id|| '',
       tecnico:      m.tecnico       || '',
       responsable:  m.responsable   || '',
+      tecnicoAsignadoId: m.tecnico_asignado_id || '',
       docSoporte:   m.doc_soporte   || '',
       docUrl:       m.doc_url       || '',
       docNombre:    m.doc_nombre    || '',
@@ -79,10 +125,10 @@ export default function Mantenimientos() {
     setModal('form')
   }
 
-  // ── Guardar ───────────────────────────────────────────────
+  // ── Guardar (admin) ────────────────────────────────────────
   const save = async () => {
-    if (!form.activoId || !form.descripcion) {
-      setMsg('Activo y descripción son obligatorios')
+    if (!form.activoId || !form.descripcion || !form.tecnicoAsignadoId) {
+      setMsg('Activo, descripción y técnico asignado son obligatorios')
       return
     }
     setMsg('')
@@ -99,6 +145,7 @@ export default function Mantenimientos() {
         contratista_id:form.contraId    || null,
         tecnico:       form.tecnico     || null,
         responsable:   form.responsable || null,
+        tecnico_asignado_id: form.tecnicoAsignadoId,
         orden_compra:  form.ordenCompra || null,
         observaciones: form.observaciones|| null,
         doc_soporte:   form.docSoporte  || null,
@@ -107,6 +154,31 @@ export default function Mantenimientos() {
       }
       if (form.id) await apiUpdateMantenimiento(form.id, payload)
       else         await apiCreateMantenimiento(payload)
+      await reload()
+      setModal(null)
+    } catch (e) {
+      setMsg(e.message || 'Error al guardar')
+    }
+  }
+
+  // ── Guardar (técnico → completar) ──────────────────────────
+  const saveComplete = async () => {
+    const { fechaEjec, descripcion, tecnico, docSoporte, docUrl } = completeForm
+    if (!fechaEjec || !descripcion || !tecnico || (!docSoporte && !docUrl)) {
+      setMsg('Todos los campos son obligatorios, excepto observaciones')
+      return
+    }
+    setMsg('')
+    try {
+      await apiUpdateMantenimiento(completeForm.id, {
+        fecha_ejec:    completeForm.fechaEjec,
+        descripcion:   completeForm.descripcion,
+        tecnico:       completeForm.tecnico,
+        observaciones: completeForm.observaciones || null,
+        doc_soporte:   completeForm.docSoporte || null,
+        doc_url:       completeForm.docUrl     || null,
+        doc_nombre:    completeForm.docNombre  || null,
+      })
       await reload()
       setModal(null)
     } catch (e) {
@@ -125,8 +197,6 @@ export default function Mantenimientos() {
     }
   }
 
-  const getDocUrl = (url) => url || null
-
   const openDoc = (m) => {
     if (!m.doc_url) return
     const a = document.createElement('a')
@@ -140,15 +210,23 @@ export default function Mantenimientos() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-start gap-3 mb-6">
         <div>
-          <h2 className="section-title">Registro de Mantenimiento</h2>
-          <p className="section-sub">Historial completo · {mantenimientos.length} registros totales</p>
+          <h2 className="section-title">{isTecnico ? 'Mis Mantenimientos Asignados' : 'Registro de Mantenimiento'}</h2>
+          <p className="section-sub">
+            {isTecnico
+              ? `${filtered.length} pendientes por completar`
+              : `Historial completo · ${mantenimientos.length} registros totales`}
+          </p>
         </div>
-        <button className="btn-primary" onClick={() => { setForm(emptyForm); setMsg(''); setModal('form') }}>
-          + Nuevo Registro
-        </button>
+        {!isTecnico && (
+          <button className="btn-primary" onClick={() => { setForm(emptyForm); setMsg(''); setModal('form') }}>
+            + Nuevo Registro
+          </button>
+        )}
       </div>
+
+      {msg && !modal && <div className="alert-err mb-4">⚠ {msg}</div>}
 
       {/* Filtros */}
       <div className="flex gap-2 mb-4 flex-wrap items-center">
@@ -158,9 +236,11 @@ export default function Mantenimientos() {
         <select className="input-field w-36" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option>Todos</option><option>Preventivo</option><option>Correctivo</option>
         </select>
-        <select className="input-field w-36" value={filtroEst} onChange={e => setFiltroEst(e.target.value)}>
-          <option>Todos</option><option>Pendiente</option><option>En proceso</option><option>Completado</option>
-        </select>
+        {!isTecnico && (
+          <select className="input-field w-36" value={filtroEst} onChange={e => setFiltroEst(e.target.value)}>
+            <option>Todos</option><option>Pendiente</option><option>En proceso</option><option>Completado</option>
+          </select>
+        )}
         <select className="input-field w-40" value={filtroSede} onChange={e => setFiltroSede(e.target.value)}>
           <option value="Todas">Todas las sedes</option>
           {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
@@ -173,17 +253,36 @@ export default function Mantenimientos() {
           <table className="w-full text-sm" style={{ minWidth: 900 }}>
             <thead>
               <tr>
-                {['Activo','Sede','Tipo','F. Prog.','F. Ejec.','Estado','Gasto','Responsable','OC / Soporte',''].map(h =>
-                  <th key={h} className="th">{h}</th>
-                )}
+                {(isTecnico
+                  ? ['Activo','Sede','Tipo','F. Prog.','Estado','']
+                  : ['Activo','Sede','Tipo','F. Prog.','F. Ejec.','Estado','Gasto','Responsable','Técnico Asignado','OC / Soporte','']
+                ).map(h => <th key={h} className="th">{h}</th>)}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0
-                ? <tr><td colSpan={10}><Empty text="Sin registros"/></td></tr>
+                ? <tr><td colSpan={isTecnico ? 6 : 11}><Empty text={isTecnico ? 'No tienes mantenimientos pendientes' : 'Sin registros'}/></td></tr>
                 : filtered.map(m => {
                     const act  = getActivo(m.activo_id)
                     // sede_nombre ya viene del JOIN, no hace falta buscar
+                    if (isTecnico) return (
+                      <tr key={m.id} className="hover:bg-bg3/30 transition-colors">
+                        <td className="td">
+                          <span className="font-bold text-accent3 text-xs">{act?.identificacion || m.activo_identificacion || '–'}</span><br/>
+                          <span className="text-xs text-gt3">{(act?.nombre || m.activo_nombre)?.substring(0, 24)}</span>
+                        </td>
+                        <td className="td text-xs text-gt2">{m.sede_nombre || '–'}</td>
+                        <td className="td"><Tag type={m.tipo === 'Preventivo' ? 'prev' : 'corr'}>{m.tipo}</Tag></td>
+                        <td className="td text-xs">{fmtDate(m.fecha_prog)}</td>
+                        <td className="td"><Tag type={m.estado === 'Pendiente' ? 'pend' : 'prog'}>{m.estado}</Tag></td>
+                        <td className="td">
+                          <div className="flex gap-1">
+                            <button className="btn-secondary btn-sm" onClick={() => setDetail(m)}>👁</button>
+                            <button className="btn-primary btn-sm" onClick={() => openComplete(m)}>✅ Completar</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
                     return (
                       <tr key={m.id} className="hover:bg-bg3/30 transition-colors">
                         <td className="td">
@@ -197,6 +296,7 @@ export default function Mantenimientos() {
                         <td className="td"><Tag type={m.estado === 'Completado' ? 'done' : m.estado === 'Pendiente' ? 'pend' : 'prog'}>{m.estado}</Tag></td>
                         <td className="td text-xs font-semibold">{m.gasto > 0 ? fmt(m.gasto) : '–'}</td>
                         <td className="td text-xs text-gt2">{m.responsable || '–'}</td>
+                        <td className="td text-xs text-gt2">{m.tecnico_asignado_nombre || '–'}</td>
                         <td className="td text-xs text-gt3 font-mono">
                           {m.orden_compra && <div>OC: {m.orden_compra}</div>}
                           {m.doc_url &&
@@ -222,12 +322,12 @@ export default function Mantenimientos() {
         </div>
       </div>
 
-      {/* FORM MODAL */}
+      {/* FORM MODAL (admin) */}
       {modal === 'form' && (
         <Modal title={form.id ? 'Editar Registro' : 'Nuevo Registro de Mantenimiento'}
                onClose={() => setModal(null)} size="xl">
           {msg && <div className="alert-err">{msg}</div>}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Activo *">
               <select className="input-field" value={form.activoId} onChange={e => onActivo(e.target.value)}>
                 <option value="">Seleccionar...</option>
@@ -270,6 +370,12 @@ export default function Mantenimientos() {
                 {contratistas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </Field>
+            <Field label="Técnico Asignado *">
+              <select className="input-field" value={form.tecnicoAsignadoId} onChange={e => f({ tecnicoAsignadoId: e.target.value })}>
+                <option value="">Seleccionar...</option>
+                {tecnicos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+              </select>
+            </Field>
             <Field label="Técnico Ejecutor">
               <input className="input-field" value={form.tecnico} onChange={e => f({ tecnico: e.target.value })}/>
             </Field>
@@ -306,6 +412,54 @@ export default function Mantenimientos() {
         </Modal>
       )}
 
+      {/* COMPLETE MODAL (técnico) */}
+      {modal === 'complete' && (
+        <Modal title="Completar Mantenimiento" onClose={() => setModal(null)} size="lg">
+          {msg && <div className="alert-err">{msg}</div>}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Fecha Ejecutada *">
+              <input className="input-field" type="date" value={completeForm.fechaEjec} onChange={e => fc({ fechaEjec: e.target.value })}/>
+            </Field>
+            <Field label="Estado">
+              <select className="input-field" value="Completado" disabled>
+                <option>Completado</option>
+              </select>
+            </Field>
+            <Field label="Descripción *" full>
+              <textarea className="input-field" rows={3} value={completeForm.descripcion}
+                        onChange={e => fc({ descripcion: e.target.value })}
+                        placeholder="Actividades realizadas..."/>
+            </Field>
+            <Field label="Técnico Ejecutor *" full>
+              <input className="input-field" value={completeForm.tecnico} onChange={e => fc({ tecnico: e.target.value })}/>
+            </Field>
+            <Field label="Documento de Soporte *" full>
+              <div className="flex gap-2 items-center flex-wrap mb-2">
+                <input className="input-field flex-1" value={completeForm.docSoporte}
+                       onChange={e => fc({ docSoporte: e.target.value })}
+                       placeholder="OT-2024-0341" style={{ minWidth: 140 }}/>
+                <FileUpload
+                  inputId="file-mant-complete"
+                  uploadFn={apiUploadDoc}
+                  docUrl={completeForm.docUrl}
+                  docNombre={completeForm.docNombre}
+                  onUploaded={({ url, nombre }) => fc({ docUrl: url, docNombre: nombre })}
+                  onClear={() => fc({ docUrl: '', docNombre: '' })}
+                />
+              </div>
+            </Field>
+            <Field label="Observaciones" full>
+              <textarea className="input-field" rows={2} value={completeForm.observaciones}
+                        onChange={e => fc({ observaciones: e.target.value })}/>
+            </Field>
+          </div>
+          <div className="flex gap-3 mt-6 justify-end">
+            <button className="btn-secondary" onClick={() => setModal(null)}>Cancelar</button>
+            <button className="btn-primary" onClick={saveComplete}>Guardar y Completar</button>
+          </div>
+        </Modal>
+      )}
+
       {/* DETAIL MODAL */}
       {detail && (
         <Modal title="Detalle de Mantenimiento" onClose={() => setDetail(null)} size="lg">
@@ -331,14 +485,15 @@ export default function Mantenimientos() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                   {[
                     ['Activo',          `${act?.identificacion || detail.activo_identificacion || '–'} – ${act?.nombre || detail.activo_nombre || ''}`],
                     ['Sede',            sede?.nombre || detail.sede_nombre || '–'],
                     ['F. Programada',   fmtDate(detail.fecha_prog)],
                     ['F. Ejecutada',    fmtDate(detail.fecha_ejec)],
                     ['Contratista',     detail.contratista_nombre || '–'],
-                    ['Técnico',         detail.tecnico     || '–'],
+                    ['Técnico Asignado',detail.tecnico_asignado_nombre || '–'],
+                    ['Técnico Ejecutor',detail.tecnico     || '–'],
                     ['Responsable',     detail.responsable || '–'],
                     ['Doc. Soporte',    detail.doc_soporte || '–'],
                     ['Orden de Compra', detail.orden_compra|| '–'],

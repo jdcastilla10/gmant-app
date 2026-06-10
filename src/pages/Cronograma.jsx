@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { apiUpsertCronograma, apiDeleteCronograma } from '../utils/api'
+import { apiUpsertCronograma, apiDeleteCronograma, apiCrearReprogramacion } from '../utils/api'
 import { MESES, FRECUENCIAS, FREC_INTERVALO } from '../utils/format'
 import { Modal, ConfirmDel, Empty, SearchBar } from '../components/UI'
+import { BRAND } from '../theme'
 
-const CICLO = { '': 'P', P: 'E', E: 'R', R: '' }
 const COLS  = {
   E: { bg: 'rgba(152,183,82,.2)',  text: '#b5d46a', bc: 'rgba(152,183,82,.4)' },
   P: { bg: 'rgba(212,160,23,.2)',  text: '#e5b84a', bc: 'rgba(212,160,23,.4)' },
@@ -12,23 +12,120 @@ const COLS  = {
   '·':{ bg: 'var(--bg3,#2a2a2a)', text: '#4D4D4D', bc: '#383838' },
 }
 
+const OPCIONES = [
+  { v: '',  label: 'Sin asignar' },
+  { v: 'P', label: 'Pendiente' },
+  { v: 'E', label: 'Ejecutado' },
+  { v: 'R', label: 'Reprogramado' },
+]
+
 // Backend stores 'N' for unset months; frontend displays as ''
 const fromBack = v => (v === 'N' || !v) ? '' : v
 const toBack   = v => v === '' ? 'N' : v
 
-function MesCell({ valor, onChange }) {
+function MesCell({ valor, onOpen }) {
   const v   = fromBack(valor)
   const key = v || '·'
   const col = COLS[key] || COLS['·']
   return (
     <div
-      onClick={onChange}
-      title={{ E: 'Ejecutado', P: 'Pendiente', R: 'Reprogramado', '': 'Sin asignar — clic para iniciar' }[v]}
-      className="w-9 h-8 rounded-md flex items-center justify-center text-xs font-bold cursor-pointer transition-transform hover:scale-110 border select-none"
+      onClick={(e) => onOpen(e.currentTarget.getBoundingClientRect())}
+      title={{ E: 'Ejecutado', P: 'Pendiente', R: 'Reprogramado', '': 'Sin asignar — clic para elegir' }[v]}
+      className="w-9 h-8 rounded-md flex items-center justify-center text-xs font-bold cursor-pointer transition-transform hover:scale-110 border select-none mx-auto"
       style={{ background: col.bg, color: col.text, borderColor: col.bc }}
     >
       {v || '·'}
     </div>
+  )
+}
+
+function ReprogramModal({ crono, mesNum, activo, onClose, onSubmit }) {
+  const [motivo, setMotivo]         = useState('')
+  const [fechaNueva, setFechaNueva] = useState('')
+  const [ajustar, setAjustar]       = useState(true)
+  const [loading, setLoading]       = useState(false)
+  const [err, setErr]               = useState('')
+
+  const intervalo = FREC_INTERVALO[crono.frecuencia] || 1
+
+  const submit = async () => {
+    if (!motivo.trim()) { setErr('El motivo es obligatorio'); return }
+    setErr('')
+    setLoading(true)
+    try {
+      await onSubmit({
+        motivo: motivo.trim(),
+        fecha_nueva: fechaNueva || null,
+        ajustar_cronograma: !!(ajustar && fechaNueva),
+      })
+      onClose()
+    } catch (e) {
+      setErr(e.message || 'Error al reprogramar')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal title={`Reprogramar — ${MESES[mesNum - 1]} ${crono.anio}`} onClose={onClose} size="sm">
+      {err && <div className="alert-err">{err}</div>}
+      <div className="flex flex-col gap-4">
+        <div>
+          <label className="form-label">Activo</label>
+          <div className="text-sm text-gt1 font-medium">
+            {activo?.identificacion || crono.identificacion} – {activo?.nombre || crono.activo_nombre}
+          </div>
+        </div>
+        <div>
+          <label className="form-label">Motivo de la reprogramación *</label>
+          <textarea
+            className="input-field"
+            rows={3}
+            value={motivo}
+            onChange={e => setMotivo(e.target.value)}
+            placeholder="Describe el motivo del cambio..."
+          />
+          <p className="text-xs text-gt3 mt-1">Este motivo quedará registrado en la hoja de vida del activo.</p>
+        </div>
+        <div>
+          <label className="form-label">Nueva fecha de mantenimiento</label>
+          <input
+            className="input-field"
+            type="date"
+            value={fechaNueva}
+            onChange={e => setFechaNueva(e.target.value)}
+          />
+        </div>
+        {fechaNueva && (
+          <div className="bg-bg3 rounded-lg p-3">
+            <label className="form-label mb-2">¿Ajustar el cronograma a partir de esta fecha?</label>
+            <div className="flex flex-col gap-2">
+              <label className="flex items-start gap-2 cursor-pointer text-sm text-gt1">
+                <input type="radio" name="ajustar" className="mt-1 accent-accent2"
+                       checked={ajustar} onChange={() => setAjustar(true)}/>
+                <span>
+                  Sí, recalcular el calendario desde esta fecha
+                  <span className="block text-xs text-gt3 mt-0.5">
+                    Cada {intervalo} {intervalo === 1 ? 'mes' : 'meses'} ({crono.frecuencia}). Los meses anteriores no se modifican.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer text-sm text-gt1">
+                <input type="radio" name="ajustar" className="mt-1 accent-accent2"
+                       checked={!ajustar} onChange={() => setAjustar(false)}/>
+                <span>No, mantener el cronograma actual sin cambios adicionales</span>
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="flex gap-3 mt-5 justify-end">
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={submit} disabled={loading}>
+          {loading ? 'Guardando...' : 'Confirmar reprogramación'}
+        </button>
+      </div>
+    </Modal>
   )
 }
 
@@ -41,6 +138,8 @@ export default function Cronograma() {
   const [filtro, setFiltro] = useState('')
   const [msg,   setMsg]     = useState('')
   const [form,  setForm]    = useState({ activoId: '', frecuencia: 'Mensual' })
+  const [openCell, setOpenCell]       = useState(null) // { crono, mesNum, rect }
+  const [reprogModal, setReprogModal] = useState(null) // { crono, mesNum }
   const anioActual = new Date().getFullYear()
   const mesActual  = new Date().getMonth()
 
@@ -63,16 +162,14 @@ export default function Cronograma() {
     } catch (e) { setMsg(e.message || 'Error al agregar') }
   }
 
-  const updateMes = async (crono, mesNum) => {
-    const key      = `mes${mesNum}`
-    const actual   = fromBack(crono[key])
-    const siguiente  = CICLO[actual]
-    const esInicio   = actual === '' && siguiente === 'P'
-    const intervalo  = FREC_INTERVALO[crono.frecuencia] || 1
+  const onChangeSimple = async (crono, mesNum, nuevoValor) => {
+    const actual    = fromBack(crono[`mes${mesNum}`])
+    const intervalo = FREC_INTERVALO[crono.frecuencia] || 1
+    const esInicio  = actual === '' && nuevoValor === 'P'
 
     const payload = { activo_id: crono.activo_id, anio: crono.anio, frecuencia: crono.frecuencia }
     for (let i = 1; i <= 12; i++) payload[`mes${i}`] = toBack(fromBack(crono[`mes${i}`]))
-    payload[key] = toBack(siguiente)
+    payload[`mes${mesNum}`] = toBack(nuevoValor)
 
     if (esInicio && intervalo > 1) {
       for (let m = mesNum + intervalo; m <= 12; m += intervalo) {
@@ -82,6 +179,29 @@ export default function Cronograma() {
 
     try { await apiUpsertCronograma(payload); await reload() }
     catch (e) { console.error(e) }
+  }
+
+  const handleSelect = (valor) => {
+    const { crono, mesNum } = openCell
+    setOpenCell(null)
+    if (valor === 'R') {
+      setReprogModal({ crono, mesNum })
+    } else {
+      onChangeSimple(crono, mesNum, valor)
+    }
+  }
+
+  const submitReprogramacion = async ({ motivo, fecha_nueva, ajustar_cronograma }) => {
+    const { crono, mesNum } = reprogModal
+    await apiCrearReprogramacion({
+      activo_id: crono.activo_id,
+      anio: crono.anio,
+      mes: mesNum,
+      motivo,
+      fecha_nueva,
+      ajustar_cronograma,
+    })
+    await reload()
   }
 
   const updateFrec = async (crono, val) => {
@@ -114,7 +234,7 @@ export default function Cronograma() {
       <div className="flex justify-between items-start mb-6 gap-4 flex-wrap">
         <div>
           <h2 className="section-title">Cronograma Anual</h2>
-          <p className="section-sub">Selecciona la frecuencia → haz clic en el primer mes de inicio → los siguientes se marcan automáticamente</p>
+          <p className="section-sub">Haz clic en un mes para elegir su estado: Pendiente, Ejecutado, Reprogramado o Sin asignar</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 bg-bg2 border border-gborder2 rounded-lg px-3 py-1.5">
@@ -166,8 +286,8 @@ export default function Cronograma() {
                     {MESES.map((m, i) => (
                       <th key={i} className="th text-center"
                         style={{
-                          background: anio === anioActual && i === mesActual ? 'rgba(48,80,143,.1)' : '',
-                          color:      anio === anioActual && i === mesActual ? '#7a9dd4' : '',
+                          background: anio === anioActual && i === mesActual ? 'rgba(108,179,60,.1)' : '',
+                          color:      anio === anioActual && i === mesActual ? BRAND.primaryLight : '',
                         }}>{m}</th>
                     ))}
                     <th className="th text-center" style={{ minWidth: 70 }}>Avance</th>
@@ -199,12 +319,12 @@ export default function Cronograma() {
                         {Array.from({ length: 12 }, (_, i) => (
                           <td key={i} className="td text-center"
                             style={{
-                              background: anio === anioActual && i === mesActual ? 'rgba(48,80,143,.04)' : '',
+                              background: anio === anioActual && i === mesActual ? 'rgba(108,179,60,.05)' : '',
                               padding: '6px 4px',
                             }}>
                             <MesCell
                               valor={crono[`mes${i + 1}`]}
-                              onChange={() => updateMes(crono, i + 1)}
+                              onOpen={(rect) => setOpenCell({ crono, mesNum: i + 1, rect })}
                             />
                           </td>
                         ))}
@@ -215,7 +335,7 @@ export default function Cronograma() {
                           </div>
                           <div className="h-1 rounded-full bg-bg4 overflow-hidden w-12 mx-auto">
                             <div className="h-full rounded-full transition-all"
-                              style={{ width: pct + '%', background: pct === 100 ? '#98B752' : pct > 50 ? '#d4a017' : '#4a6db5' }}/>
+                              style={{ width: pct + '%', background: pct === 100 ? '#98B752' : pct > 50 ? '#d4a017' : BRAND.primaryHover }}/>
                           </div>
                         </td>
                         <td className="td">
@@ -232,7 +352,7 @@ export default function Cronograma() {
           {/* Totales */}
           <div className="flex gap-3 mt-4 flex-wrap">
             {[
-              { l: 'Activos en cronograma', v: filtrados.length, c: '#7a9dd4' },
+              { l: 'Activos en cronograma', v: filtrados.length, c: BRAND.primaryLight },
               { l: 'Ejecutados',   v: filtrados.reduce((a, c) => a + Array.from({ length: 12 }, (_, i) => fromBack(c[`mes${i + 1}`])).filter(m => m === 'E').length, 0), c: '#98B752' },
               { l: 'Pendientes',   v: filtrados.reduce((a, c) => a + Array.from({ length: 12 }, (_, i) => fromBack(c[`mes${i + 1}`])).filter(m => m === 'P').length, 0), c: '#d4a017' },
               { l: 'Reprogramados',v: filtrados.reduce((a, c) => a + Array.from({ length: 12 }, (_, i) => fromBack(c[`mes${i + 1}`])).filter(m => m === 'R').length, 0), c: '#a99dd4' },
@@ -244,6 +364,49 @@ export default function Cronograma() {
             ))}
           </div>
         </>
+      )}
+
+      {/* Dropdown flotante de selección de estado */}
+      {openCell && (
+        <>
+          <div className="fixed inset-0 z-[1999]" onClick={() => setOpenCell(null)}/>
+          <div
+            className="fixed z-[2000] bg-bg2 border border-gborder2 rounded-lg shadow-2xl overflow-hidden py-1"
+            style={{
+              top: openCell.rect.bottom + 4,
+              left: Math.min(openCell.rect.left, window.innerWidth - 160),
+              minWidth: 150,
+            }}
+          >
+            {OPCIONES.map(op => {
+              const col = COLS[op.v || '·']
+              return (
+                <button
+                  key={op.v || '_'}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-bg3 transition-colors text-left text-gt1"
+                  onClick={() => handleSelect(op.v)}
+                >
+                  <span className="w-5 h-5 rounded flex items-center justify-center text-xs font-bold border flex-shrink-0"
+                        style={{ background: col.bg, color: col.text, borderColor: col.bc }}>
+                    {op.v || '·'}
+                  </span>
+                  {op.label}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Modal de reprogramación */}
+      {reprogModal && (
+        <ReprogramModal
+          crono={reprogModal.crono}
+          mesNum={reprogModal.mesNum}
+          activo={getActivo(reprogModal.crono.activo_id)}
+          onClose={() => setReprogModal(null)}
+          onSubmit={submitReprogramacion}
+        />
       )}
 
       {modal === 'form' && (
@@ -265,7 +428,7 @@ export default function Cronograma() {
             </div>
           </div>
           <div className="mt-4 p-3 bg-bg3 rounded-lg text-xs text-gt2 leading-relaxed">
-            💡 Luego haz clic en el primer mes de inicio → los siguientes se marcan automáticamente según la frecuencia
+            💡 Luego haz clic en un mes para elegir su estado. Si eliges "Pendiente" en el primer mes, los siguientes se marcan automáticamente según la frecuencia.
           </div>
           <div className="flex gap-3 mt-5 justify-end">
             <button className="btn-secondary" onClick={() => setModal(null)}>Cancelar</button>

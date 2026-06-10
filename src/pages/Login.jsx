@@ -6,6 +6,7 @@
  */
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { BRAND } from '../theme'
 
 export default function Login() {
   const { login } = useApp()
@@ -29,11 +30,13 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg"
-         style={{background:'radial-gradient(ellipse at 30% 40%,rgba(48,80,143,.1) 0%,transparent 60%),#1a1a1a'}}>
-      <div className="w-96 p-10 bg-bg2 border border-gborder2 rounded-2xl shadow-2xl">
+         style={{background:`radial-gradient(ellipse at 30% 40%,${BRAND.primary}1a 0%,transparent 60%),#1a1a1a`}}>
+      <div className="w-full max-w-sm sm:max-w-md p-6 sm:p-10 mx-4 bg-bg2 border border-gborder2 rounded-2xl shadow-2xl">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl text-white shadow-lg"
-               style={{background:'linear-gradient(135deg,#30508F,#4a6db5)',boxShadow:'0 8px 24px rgba(48,80,143,.4)'}}>⚙</div>
+          <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white flex items-center justify-center mx-auto mb-4 shadow-lg"
+               style={{boxShadow:`0 8px 24px ${BRAND.primary}66`}}>
+            <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover"/>
+          </div>
           <h1 className="text-2xl font-extrabold text-gt1 tracking-tight">GRUPO RECORDAR</h1>
           <p className="text-gt2 text-sm mt-1">Sistema de Gestión de Mantenimiento</p>
         </div>

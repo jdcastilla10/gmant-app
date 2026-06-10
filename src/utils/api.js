@@ -85,6 +85,10 @@ export const apiGetCronograma    = (anio)     => get(`/cronograma${anio ? `?anio
 export const apiUpsertCronograma = (data)     => post('/cronograma', data)
 export const apiDeleteCronograma = (id)       => del(`/cronograma/${id}`)
 
+// ── REPROGRAMACIONES ──────────────────────────────────────────
+export const apiGetReprogramaciones = (activoId) => get(`/reprogramaciones/${activoId}`)
+export const apiCrearReprogramacion = (data)     => post('/reprogramaciones', data)
+
 // ── UPLOAD ────────────────────────────────────────────────────
 export const apiUploadDoc = async (file) => {
   const token = getToken()

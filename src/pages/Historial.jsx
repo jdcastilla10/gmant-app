@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { fmt, fmtDate } from '../utils/format'
 import { Tag, Empty, SearchBar } from '../components/UI'
+import { BRAND } from '../theme'
 
 export default function Historial() {
   const { data } = useApp()
@@ -77,7 +78,7 @@ export default function Historial() {
           m.creado_por || '',
         ]
       })
-      const th   = 'border:1px solid #aaa;padding:7px 10px;background:#30508F;color:#fff;font-weight:bold;white-space:nowrap;'
+      const th   = `border:1px solid #aaa;padding:7px 10px;background:${BRAND.primary};color:#fff;font-weight:bold;white-space:nowrap;`
       const td   = 'border:1px solid #ddd;padding:6px 10px;white-space:nowrap;'
       const tn   = 'border:1px solid #ddd;padding:6px 10px;white-space:nowrap;text-align:right;'
       const ts   = 'border-collapse:collapse;font-family:Segoe UI,Arial,sans-serif;font-size:12px;'
@@ -99,7 +100,7 @@ export default function Historial() {
       const rrows = '<tr><th style="' + rth + '">Descripción</th><th style="' + rth + '">Valor</th></tr>' +
         rdata.map(r => '<tr><td style="' + td + '">' + esc(String(r[0])) + '</td><td style="' + tn + '">' + r[1] + '</td></tr>').join('')
       const html = `<html><head><meta charset="UTF-8"></head><body>
-        <h3 style="color:#30508F;font-family:Segoe UI,Arial,sans-serif;margin-bottom:10px;">Grupo Recordar – Historial de Mantenimientos</h3>
+        <h3 style="color:${BRAND.primary};font-family:Segoe UI,Arial,sans-serif;margin-bottom:10px;">Grupo Recordar – Historial de Mantenimientos</h3>
         <table style="${ts}">${hrow}${drows}</table><br><br>
         <h3 style="color:#98B752;font-family:Segoe UI,Arial,sans-serif;margin-bottom:10px;">Resumen</h3>
         <table style="${ts}">${rrows}</table></body></html>`
@@ -120,7 +121,7 @@ export default function Historial() {
           <h2 className="section-title">Historial de Mantenimientos</h2>
           <p className="section-sub">Base de datos completa con filtros avanzados y exportación</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button className="btn-secondary" onClick={limpiar}>↺ Limpiar filtros</button>
           <button className="btn-green flex items-center gap-2" onClick={exportar} disabled={exportando || filtered.length === 0}>
             <span>📥</span> {exportando ? 'Exportando...' : 'Exportar a Excel (.xls)'}
@@ -128,7 +129,7 @@ export default function Historial() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         {[
           { l: 'Registros encontrados', v: filtered.length,                                            c: 'text-accent3'  },
           { l: 'Preventivos',           v: filtered.filter(m => m.tipo === 'Preventivo').length,       c: 'text-accent2'  },
