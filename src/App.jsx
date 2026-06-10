@@ -9,20 +9,22 @@ import Historial from './pages/Historial'
 import Cronograma from './pages/Cronograma'
 import { Sedes, Contratistas, Usuarios } from './pages/Otros'
 
+const TECNICO_PAGES = ['mantenimientos', 'historial']
+
 const NAV = [
-  { id:'dashboard',     label:'Dashboard',        icon:'📊' },
-  { id:'activos',       label:'Activos',           icon:'⚙️' },
-  { id:'mantenimientos',label:'Mantenimientos',    icon:'🔧' },
-  { id:'historial',     label:'Historial',         icon:'📋' },
-  { id:'cronograma',    label:'Cronograma Anual',  icon:'📅' },
-  { id:'sedes',         label:'Sedes',             icon:'🏭' },
-  { id:'contratistas',  label:'Contratistas',      icon:'🤝' },
-  { id:'usuarios',      label:'Usuarios',          icon:'👥', adminOnly:true },
+  { id:'dashboard',     label:'Dashboard',        icon:'📊', roles:['admin'] },
+  { id:'activos',       label:'Activos',           icon:'⚙️', roles:['admin'] },
+  { id:'mantenimientos',label:'Mantenimientos',    icon:'🔧', roles:['admin','tecnico'] },
+  { id:'historial',     label:'Historial',         icon:'📋', roles:['admin','tecnico'] },
+  { id:'cronograma',    label:'Cronograma Anual',  icon:'📅', roles:['admin'] },
+  { id:'sedes',         label:'Sedes',             icon:'🏭', roles:['admin'] },
+  { id:'contratistas',  label:'Contratistas',      icon:'🤝', roles:['admin'] },
+  { id:'usuarios',      label:'Usuarios',          icon:'👥', roles:['admin'] },
 ]
 
 export default function App() {
   const { session, logout, loading, data } = useApp()
-  const [page, setPage]           = useState('dashboard')
+  const [rawPage, setPage]        = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Detectar QR: ?activo=UUID en la URL
@@ -43,6 +45,13 @@ export default function App() {
     }
   }, [session, pendingActivoId])
 
+  // Los técnicos solo pueden ver Mantenimientos e Historial
+  useEffect(() => {
+    if (session?.rol === 'tecnico' && !TECNICO_PAGES.includes(rawPage)) {
+      setPage('mantenimientos')
+    }
+  }, [session, rawPage])
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-bg">
       <div className="w-8 h-8 border-2 border-gborder2 border-t-accent2 rounded-full animate-spin"/>
@@ -51,7 +60,9 @@ export default function App() {
   if (!session) return <Login/>
 
   const pendientes = data.mantenimientos.filter(m=>m.estado==='Pendiente').length
-  const navItems   = NAV.filter(n=>!n.adminOnly||session.rol==='admin')
+  const navItems   = NAV.filter(n=>n.roles.includes(session.rol))
+  const isTecnico  = session.rol === 'tecnico'
+  const page       = isTecnico && !TECNICO_PAGES.includes(rawPage) ? 'mantenimientos' : rawPage
 
   const navigate = (id) => { setPage(id); setSidebarOpen(false) }
 
