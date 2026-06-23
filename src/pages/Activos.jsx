@@ -22,6 +22,8 @@ export default function Activos() {
   const [search,      setSearch]      = useState('')
   const [uploadingImg,setUploadingImg]= useState(false)
   const [qrModal,     setQrModal]     = useState(null) // { activo, dataUrl }
+  const [hojaVida,    setHojaVida]    = useState(null) // activo obj
+  const [reprogs,     setReprogs]     = useState([])
   const imgInputRef = useRef(null)
 
   const f = v => setForm(p => ({ ...p, ...v }))
@@ -110,6 +112,16 @@ export default function Activos() {
     })
     setMsg('')
     setModal('form')
+  }
+
+  // ── Hoja de vida ──────────────────────────────────────────
+  const openHojaVida = async (activo) => {
+    setHojaVida(activo)
+    setReprogs([])
+    try {
+      const r = await apiGetReprogramaciones(activo.id)
+      setReprogs(r)
+    } catch {}
   }
 
   // ── Ver / descargar QR ───────────────────────────────────
@@ -353,8 +365,9 @@ export default function Activos() {
                         </td>
                         <td className="td">
                           <div className="flex gap-1.5">
-                            <button className="btn-secondary btn-sm" title="Generar ficha" onClick={() => generarFicha(a)}>📄</button>
-                            <button className="btn-secondary btn-sm" title="Ver QR"        onClick={() => verQR(a)}>⬛</button>
+                            <button className="btn-secondary btn-sm" title="Hoja de vida"   onClick={() => openHojaVida(a)}>👁</button>
+                            <button className="btn-secondary btn-sm" title="Imprimir ficha" onClick={() => generarFicha(a)}>📄</button>
+                            <button className="btn-secondary btn-sm" title="Ver QR"         onClick={() => verQR(a)}>⬛</button>
                             <button className="btn-secondary btn-sm" onClick={() => openEdit(a)}>✎</button>
                             <button className="btn-danger btn-sm"    onClick={() => setDel(a)}>✕</button>
                           </div>
@@ -477,6 +490,93 @@ export default function Activos() {
           onCancel={() => setDel(null)}
         />
       )}
+
+      {/* HOJA DE VIDA MODAL */}
+      {hojaVida && (() => {
+        const actMants = mantenimientos
+          .filter(m => m.activo_id === hojaVida.id)
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        const sede = sedes.find(s => s.id === hojaVida.sede_id)
+        return (
+          <Modal title="Hoja de Vida del Equipo" onClose={() => setHojaVida(null)} size="xl">
+            {/* Header del activo */}
+            <div className="flex items-center gap-4 p-4 mb-5 bg-bg3 border border-gborder2 rounded-xl">
+              {hojaVida.foto_url
+                ? <img src={hojaVida.foto_url} alt={hojaVida.nombre}
+                       className="w-20 h-20 rounded-lg object-cover border border-gborder2 flex-shrink-0"/>
+                : <div className="w-20 h-20 rounded-lg bg-bg4 border border-gborder2 flex items-center justify-center text-3xl text-gt3 flex-shrink-0">⚙️</div>
+              }
+              <div className="flex-1 min-w-0">
+                <div className="text-base font-bold text-gt1">{hojaVida.nombre}</div>
+                <div className="text-sm text-accent3 font-semibold mt-0.5">{hojaVida.identificacion}</div>
+                <div className="text-xs text-gt3 mt-1">{sede?.nombre || '–'} · {hojaVida.frecuencia || '–'}</div>
+              </div>
+              <Tag type={hojaVida.estado === 'Activo' ? 'done' : 'corr'}>{hojaVida.estado}</Tag>
+            </div>
+
+            {/* Historial de mantenimientos */}
+            <div className="mb-5">
+              <div className="text-xs font-bold text-gt2 uppercase tracking-wider mb-3" style={{ borderLeft: `3px solid ${BRAND.primary}`, paddingLeft: 8 }}>
+                Historial de Mantenimientos ({actMants.length})
+              </div>
+              {actMants.length === 0
+                ? <div className="text-center py-6 text-gt3 text-sm">Sin mantenimientos registrados</div>
+                : <div className="flex flex-col gap-2">
+                    {actMants.map(m => (
+                      <div key={m.id} className="flex items-start gap-3 p-3 bg-bg3 rounded-lg border border-gborder2">
+                        <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-0.5">
+                          <Tag type={m.tipo === 'Preventivo' ? 'prev' : 'corr'}>{m.tipo}</Tag>
+                          <Tag type={m.estado === 'Completado' ? 'done' : m.estado === 'Pendiente' ? 'pend' : 'prog'}>{m.estado}</Tag>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex gap-4 text-xs text-gt3 mb-1">
+                            <span>Prog: {fmtDate(m.fecha_prog)}</span>
+                            {m.fecha_ejec && <span>Ejec: {fmtDate(m.fecha_ejec)}</span>}
+                            {m.gasto > 0 && <span className="font-semibold text-ggreen2">{fmt(m.gasto)}</span>}
+                          </div>
+                          {m.descripcion && <div className="text-sm text-gt1 mb-1">{m.descripcion}</div>}
+                          <div className="text-xs text-gt3">
+                            {m.tecnico && <span>Técnico: {m.tecnico}</span>}
+                            {m.contratista_nombre && <span> · Contratista: {m.contratista_nombre}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+              }
+            </div>
+
+            {/* Reprogramaciones */}
+            <div>
+              <div className="text-xs font-bold text-gt2 uppercase tracking-wider mb-3" style={{ borderLeft: '3px solid #a99dd4', paddingLeft: 8 }}>
+                Reprogramaciones ({reprogs.length})
+              </div>
+              {reprogs.length === 0
+                ? <div className="text-center py-6 text-gt3 text-sm">Sin reprogramaciones registradas</div>
+                : <div className="flex flex-col gap-2">
+                    {reprogs.map(r => (
+                      <div key={r.id} className="flex items-start gap-3 p-3 bg-bg3 rounded-lg border border-gborder2">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                             style={{ background: 'rgba(107,95,166,.2)', color: '#a99dd4', border: '1px solid rgba(107,95,166,.4)' }}>
+                          R
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-gt3 mb-1">
+                            {MESES[r.mes - 1]} {r.anio}
+                            {r.fecha_nueva && <span> → Nueva fecha: <span className="text-accent3 font-semibold">{fmtDate(r.fecha_nueva)}</span></span>}
+                            {r.ajusto_cronograma ? <span className="ml-2 text-gt3">(cronograma ajustado)</span> : ''}
+                          </div>
+                          <div className="text-sm text-gt1">{r.motivo || 'Sin motivo registrado'}</div>
+                          {r.creado_por && <div className="text-xs text-gt3 mt-1">Por: {r.creado_por}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+              }
+            </div>
+          </Modal>
+        )
+      })()}
 
       {/* MODAL QR */}
       {qrModal && (

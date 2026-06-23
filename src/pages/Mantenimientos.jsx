@@ -131,8 +131,8 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
 
   // ── Guardar (admin) ────────────────────────────────────────
   const save = async () => {
-    if (!form.activoId || !form.descripcion || !form.tecnicoAsignadoId) {
-      setMsg('Activo, descripción y técnico asignado son obligatorios')
+    if (!form.activoId || !form.tecnicoAsignadoId) {
+      setMsg('Activo y técnico asignado son obligatorios')
       return
     }
     setMsg('')
@@ -382,7 +382,7 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
             <Field label="Fecha Ejecutada">
               <input className="input-field" type="date" value={form.fechaEjec} onChange={e => f({ fechaEjec: e.target.value })}/>
             </Field>
-            <Field label="Descripción *" full>
+            <Field label="Descripción" full>
               <textarea className="input-field" rows={3} value={form.descripcion}
                         onChange={e => f({ descripcion: e.target.value })}
                         placeholder="Actividades realizadas..."/>
