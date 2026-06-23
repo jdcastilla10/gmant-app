@@ -23,18 +23,20 @@ const OPCIONES = [
 const fromBack = v => (v === 'N' || !v) ? '' : v
 const toBack   = v => v === '' ? 'N' : v
 
-function MesCell({ valor, onOpen }) {
+function MesCell({ valor, onOpen, futuro }) {
   const v   = fromBack(valor)
   const key = v || '·'
   const col = COLS[key] || COLS['·']
-  const locked = v === 'E' || v === 'R'
+  const locked = v === 'E' || v === 'R' || futuro
   return (
     <div
       onClick={locked ? undefined : (e) => onOpen(e.currentTarget.getBoundingClientRect())}
       title={locked
-        ? `${v === 'E' ? 'Ejecutado' : 'Reprogramado'} — no modificable`
+        ? v === 'E' ? 'Ejecutado — no modificable'
+        : v === 'R' ? 'Reprogramado — no modificable'
+        : 'Mes futuro — no disponible aún'
         : { P: 'Pendiente', '': 'Sin asignar — clic para elegir' }[v]}
-      className={`w-9 h-8 rounded-md flex items-center justify-center text-xs font-bold border select-none mx-auto transition-transform ${locked ? 'cursor-not-allowed opacity-80' : 'cursor-pointer hover:scale-110'}`}
+      className={`w-9 h-8 rounded-md flex items-center justify-center text-xs font-bold border select-none mx-auto transition-transform ${locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:scale-110'}`}
       style={{ background: col.bg, color: col.text, borderColor: col.bc }}
     >
       {v || '·'}
@@ -326,18 +328,22 @@ export default function Cronograma() {
                             {FRECUENCIAS.map(fr => <option key={fr}>{fr}</option>)}
                           </select>
                         </td>
-                        {Array.from({ length: 12 }, (_, i) => (
-                          <td key={i} className="td text-center"
-                            style={{
-                              background: anio === anioActual && i === mesActual ? 'rgba(108,179,60,.05)' : '',
-                              padding: '6px 4px',
-                            }}>
-                            <MesCell
-                              valor={crono[`mes${i + 1}`]}
-                              onOpen={(rect) => setOpenCell({ crono, mesNum: i + 1, rect })}
-                            />
-                          </td>
-                        ))}
+                        {Array.from({ length: 12 }, (_, i) => {
+                          const esFuturo = anio > anioActual || (anio === anioActual && i > mesActual)
+                          return (
+                            <td key={i} className="td text-center"
+                              style={{
+                                background: anio === anioActual && i === mesActual ? 'rgba(108,179,60,.05)' : '',
+                                padding: '6px 4px',
+                              }}>
+                              <MesCell
+                                valor={crono[`mes${i + 1}`]}
+                                futuro={esFuturo}
+                                onOpen={(rect) => setOpenCell({ crono, mesNum: i + 1, rect })}
+                              />
+                            </td>
+                          )
+                        })}
                         <td className="td text-center">
                           <div className="text-xs font-bold mb-1"
                             style={{ color: pct === 100 ? '#98B752' : pct > 0 ? '#d4a017' : '#4D4D4D' }}>
