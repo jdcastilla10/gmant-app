@@ -27,11 +27,14 @@ function MesCell({ valor, onOpen }) {
   const v   = fromBack(valor)
   const key = v || '·'
   const col = COLS[key] || COLS['·']
+  const locked = v === 'E' || v === 'R'
   return (
     <div
-      onClick={(e) => onOpen(e.currentTarget.getBoundingClientRect())}
-      title={{ E: 'Ejecutado', P: 'Pendiente', R: 'Reprogramado', '': 'Sin asignar — clic para elegir' }[v]}
-      className="w-9 h-8 rounded-md flex items-center justify-center text-xs font-bold cursor-pointer transition-transform hover:scale-110 border select-none mx-auto"
+      onClick={locked ? undefined : (e) => onOpen(e.currentTarget.getBoundingClientRect())}
+      title={locked
+        ? `${v === 'E' ? 'Ejecutado' : 'Reprogramado'} — no modificable`
+        : { P: 'Pendiente', '': 'Sin asignar — clic para elegir' }[v]}
+      className={`w-9 h-8 rounded-md flex items-center justify-center text-xs font-bold border select-none mx-auto transition-transform ${locked ? 'cursor-not-allowed opacity-80' : 'cursor-pointer hover:scale-110'}`}
       style={{ background: col.bg, color: col.text, borderColor: col.bc }}
     >
       {v || '·'}
@@ -119,7 +122,10 @@ function ReprogramModal({ crono, mesNum, activo, onClose, onSubmit }) {
           </div>
         )}
       </div>
-      <div className="flex gap-3 mt-5 justify-end">
+      <div className="bg-amber-900/10 border border-amber-700/30 rounded-lg p-3 mt-4 text-xs text-amber-400">
+        ⚠ Esta acción no tiene reversa. Una vez reprogramado, el mes no podrá volver a su estado anterior.
+      </div>
+      <div className="flex gap-3 mt-4 justify-end">
         <button className="btn-secondary" onClick={onClose}>Cancelar</button>
         <button className="btn-primary" onClick={submit} disabled={loading}>
           {loading ? 'Guardando...' : 'Confirmar reprogramación'}
@@ -140,6 +146,7 @@ export default function Cronograma() {
   const [form,  setForm]    = useState({ activoId: '', frecuencia: 'Mensual' })
   const [openCell, setOpenCell]       = useState(null) // { crono, mesNum, rect }
   const [reprogModal, setReprogModal] = useState(null) // { crono, mesNum }
+  const [confirmEjec, setConfirmEjec] = useState(null) // { crono, mesNum }
   const anioActual = new Date().getFullYear()
   const mesActual  = new Date().getMonth()
 
@@ -186,6 +193,8 @@ export default function Cronograma() {
     setOpenCell(null)
     if (valor === 'R') {
       setReprogModal({ crono, mesNum })
+    } else if (valor === 'E') {
+      setConfirmEjec({ crono, mesNum })
     } else {
       onChangeSimple(crono, mesNum, valor)
     }
@@ -408,6 +417,31 @@ export default function Cronograma() {
           onClose={() => setReprogModal(null)}
           onSubmit={submitReprogramacion}
         />
+      )}
+
+      {/* Confirmación de marcar como Ejecutado */}
+      {confirmEjec && (
+        <Modal title={`Marcar como Ejecutado — ${MESES[confirmEjec.mesNum - 1]} ${confirmEjec.crono.anio}`} onClose={() => setConfirmEjec(null)} size="sm">
+          <div className="text-center py-2">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4"
+                 style={{ background: 'rgba(152,183,82,.2)', color: '#b5d46a', border: '2px solid rgba(152,183,82,.4)' }}>
+              E
+            </div>
+            <p className="text-sm text-gt1 mb-2">
+              ¿Confirmas que deseas marcar este mes como <strong>Ejecutado</strong>?
+            </p>
+            <div className="bg-amber-900/10 border border-amber-700/30 rounded-lg p-3 mt-3 text-xs text-amber-400">
+              ⚠ Esta acción no tiene reversa. Una vez marcado como ejecutado, no se podrá modificar.
+            </div>
+          </div>
+          <div className="flex gap-3 mt-5 justify-end">
+            <button className="btn-secondary" onClick={() => setConfirmEjec(null)}>Cancelar</button>
+            <button className="btn-primary" onClick={() => {
+              onChangeSimple(confirmEjec.crono, confirmEjec.mesNum, 'E')
+              setConfirmEjec(null)
+            }}>Confirmar</button>
+          </div>
+        </Modal>
       )}
 
       {modal === 'form' && (
