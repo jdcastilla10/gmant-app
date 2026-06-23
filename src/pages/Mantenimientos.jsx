@@ -27,6 +27,7 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
   const [del,          setDel]          = useState(null)
   const [form,         setForm]         = useState(emptyForm)
   const [completeForm, setCompleteForm] = useState(emptyComplete)
+  const [scannedActivo, setScannedActivo] = useState(null)
   const [msg,        setMsg]        = useState('')
   const [search,     setSearch]     = useState('')
   const [filtroTipo, setFiltroTipo] = useState('Todos')
@@ -42,6 +43,8 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
 
   // Abrir modal de "completar" (técnico) con los datos del mantenimiento
   const openComplete = (m) => {
+    const act = getActivo(m.activo_id)
+    if (act) setScannedActivo(act)
     setCompleteForm({
       id:            m.id,
       fechaEjec:     m.fecha_ejec ? m.fecha_ejec.toString().split('T')[0] : today(),
@@ -61,6 +64,7 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
     if (pendingActivoId && activos.length > 0) {
       const act = activos.find(a => a.id === pendingActivoId)
       if (!act) return
+      setScannedActivo(act)
       if (isTecnico) {
         const m = mantenimientos.find(x => x.activo_id === act.id && x.estado !== 'Completado')
         if (m) openComplete(m)
@@ -155,7 +159,7 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
       if (form.id) await apiUpdateMantenimiento(form.id, payload)
       else         await apiCreateMantenimiento(payload)
       await reload()
-      setModal(null)
+      closeModal()
     } catch (e) {
       setMsg(e.message || 'Error al guardar')
     }
@@ -180,7 +184,7 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
         doc_nombre:    completeForm.docNombre  || null,
       })
       await reload()
-      setModal(null)
+      closeModal()
     } catch (e) {
       setMsg(e.message || 'Error al guardar')
     }
@@ -195,6 +199,27 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
     } catch (e) {
       setMsg(e.message || 'Error al eliminar')
     }
+  }
+
+  const closeModal = () => { setModal(null); setScannedActivo(null) }
+
+  const ActivoCard = () => {
+    if (!scannedActivo) return null
+    const sede = getSede(scannedActivo.sede_id)
+    return (
+      <div className="flex items-center gap-4 p-4 mb-4 bg-bg3 border border-gborder2 rounded-xl">
+        {scannedActivo.foto_url
+          ? <img src={scannedActivo.foto_url} alt={scannedActivo.nombre}
+                 className="w-20 h-20 rounded-lg object-cover border border-gborder2 flex-shrink-0"/>
+          : <div className="w-20 h-20 rounded-lg bg-bg4 border border-gborder2 flex items-center justify-center text-3xl text-gt3 flex-shrink-0">⚙️</div>
+        }
+        <div className="flex-1 min-w-0">
+          <div className="text-base font-bold text-gt1 truncate">{scannedActivo.nombre}</div>
+          <div className="text-sm text-accent3 font-semibold mt-0.5">{scannedActivo.identificacion}</div>
+          <div className="text-xs text-gt3 mt-1">{sede?.nombre || '–'}</div>
+        </div>
+      </div>
+    )
   }
 
   const openDoc = (m) => {
@@ -325,7 +350,8 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
       {/* FORM MODAL (admin) */}
       {modal === 'form' && (
         <Modal title={form.id ? 'Editar Registro' : 'Nuevo Registro de Mantenimiento'}
-               onClose={() => setModal(null)} size="xl">
+               onClose={closeModal} size="xl">
+          <ActivoCard/>
           {msg && <div className="alert-err">{msg}</div>}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Activo *">
@@ -406,7 +432,7 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
             </Field>
           </div>
           <div className="flex gap-3 mt-6 justify-end">
-            <button className="btn-secondary" onClick={() => setModal(null)}>Cancelar</button>
+            <button className="btn-secondary" onClick={closeModal}>Cancelar</button>
             <button className="btn-primary" onClick={save}>Guardar Registro</button>
           </div>
         </Modal>
@@ -414,7 +440,8 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
 
       {/* COMPLETE MODAL (técnico) */}
       {modal === 'complete' && (
-        <Modal title="Completar Mantenimiento" onClose={() => setModal(null)} size="lg">
+        <Modal title="Completar Mantenimiento" onClose={closeModal} size="lg">
+          <ActivoCard/>
           {msg && <div className="alert-err">{msg}</div>}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Fecha Ejecutada *">
@@ -454,7 +481,7 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
             </Field>
           </div>
           <div className="flex gap-3 mt-6 justify-end">
-            <button className="btn-secondary" onClick={() => setModal(null)}>Cancelar</button>
+            <button className="btn-secondary" onClick={closeModal}>Cancelar</button>
             <button className="btn-primary" onClick={saveComplete}>Guardar y Completar</button>
           </div>
         </Modal>
