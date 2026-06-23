@@ -300,11 +300,11 @@ export default function Activos() {
 
       <div className="bg-bg2 border border-gborder rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" style={{ minWidth: 950 }}>
             <thead>
               <tr>
                 {['','Identificación','Nombre / Equipo','Sede','Categoría','Marca / Serial','Frec.','Estado','Valor','Mant.',''].map((h,i) =>
-                  <th key={i} className="th">{h}</th>
+                  <th key={i} className="th whitespace-nowrap">{h}</th>
                 )}
               </tr>
             </thead>

@@ -41,7 +41,7 @@ export function Tag({ type, children }) {
 // ── Form field ───────────────────────────────────────────
 export function Field({ label, children, full }) {
   return (
-    <div className={full ? 'col-span-2' : ''}>
+    <div className={full ? 'col-span-1 sm:col-span-2' : ''}>
       <label className="form-label">{label}</label>
       {children}
     </div>
@@ -74,7 +74,7 @@ export function StatCard({ icon, value, label, color }) {
   return (
     <div className={`card border-t-2 ${colors[color]||'border-t-accent'}`}>
       <div className="text-2xl opacity-60">{icon}</div>
-      <div className="text-2xl font-bold text-gt1 mt-2 mb-1">{value}</div>
+      <div className="text-lg sm:text-2xl font-bold text-gt1 mt-2 mb-1 break-all leading-tight">{value}</div>
       <div className="text-xs text-gt2">{label}</div>
     </div>
   )

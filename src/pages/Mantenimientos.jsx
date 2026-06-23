@@ -207,15 +207,15 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
     if (!scannedActivo) return null
     const sede = getSede(scannedActivo.sede_id)
     return (
-      <div className="flex items-center gap-4 p-4 mb-4 bg-bg3 border border-gborder2 rounded-xl">
+      <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 mb-4 bg-bg3 border border-gborder2 rounded-xl">
         {scannedActivo.foto_url
           ? <img src={scannedActivo.foto_url} alt={scannedActivo.nombre}
-                 className="w-20 h-20 rounded-lg object-cover border border-gborder2 flex-shrink-0"/>
-          : <div className="w-20 h-20 rounded-lg bg-bg4 border border-gborder2 flex items-center justify-center text-3xl text-gt3 flex-shrink-0">⚙️</div>
+                 className="w-14 h-14 sm:w-20 sm:h-20 rounded-lg object-cover border border-gborder2 flex-shrink-0"/>
+          : <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-lg bg-bg4 border border-gborder2 flex items-center justify-center text-2xl sm:text-3xl text-gt3 flex-shrink-0">⚙️</div>
         }
         <div className="flex-1 min-w-0">
-          <div className="text-base font-bold text-gt1 truncate">{scannedActivo.nombre}</div>
-          <div className="text-sm text-accent3 font-semibold mt-0.5">{scannedActivo.identificacion}</div>
+          <div className="text-sm sm:text-base font-bold text-gt1 truncate">{scannedActivo.nombre}</div>
+          <div className="text-xs sm:text-sm text-accent3 font-semibold mt-0.5">{scannedActivo.identificacion}</div>
           <div className="text-xs text-gt3 mt-1">{sede?.nombre || '–'}</div>
         </div>
       </div>
@@ -255,18 +255,18 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
 
       {/* Filtros */}
       <div className="flex gap-2 mb-4 flex-wrap items-center">
-        <div className="flex-1 min-w-[200px]">
+        <div className="w-full sm:flex-1 sm:w-auto sm:min-w-[200px]">
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar activo, contratista, responsable..."/>
         </div>
-        <select className="input-field w-36" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+        <select className="input-field flex-1 sm:flex-none sm:w-36" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option>Todos</option><option>Preventivo</option><option>Correctivo</option>
         </select>
         {!isTecnico && (
-          <select className="input-field w-36" value={filtroEst} onChange={e => setFiltroEst(e.target.value)}>
+          <select className="input-field flex-1 sm:flex-none sm:w-36" value={filtroEst} onChange={e => setFiltroEst(e.target.value)}>
             <option>Todos</option><option>Pendiente</option><option>En proceso</option><option>Completado</option>
           </select>
         )}
-        <select className="input-field w-40" value={filtroSede} onChange={e => setFiltroSede(e.target.value)}>
+        <select className="input-field w-full sm:w-40" value={filtroSede} onChange={e => setFiltroSede(e.target.value)}>
           <option value="Todas">Todas las sedes</option>
           {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>

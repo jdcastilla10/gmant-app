@@ -44,7 +44,8 @@ export default function Dashboard() {
     <div>
       <div className="mb-7">
         <h2 className="section-title">Dashboard</h2>
-        <p className="section-sub">Resumen ejecutivo — {new Date().toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
+        <p className="section-sub hidden sm:block">Resumen ejecutivo — {new Date().toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
+        <p className="section-sub sm:hidden">{new Date().toLocaleDateString('es-CO',{month:'long',day:'numeric',year:'numeric'})}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
@@ -71,11 +72,11 @@ export default function Dashboard() {
               <div className="text-xs text-gt3 mt-1">{g.p}% del gasto total</div>
             </div>
           ))}
-          <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-gborder">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-5 pt-4 border-t border-gborder">
             {[{l:'Sedes',v:sedes.length},{l:'Contratistas',v:contratistas.length},{l:'Total Mant.',v:mantenimientos.length}].map((x,i)=>(
-              <div key={i} className="text-center bg-bg3 rounded-lg py-3">
-                <div className="text-xl font-bold text-gt1">{x.v}</div>
-                <div className="text-xs text-gt3 mt-1">{x.l}</div>
+              <div key={i} className="text-center bg-bg3 rounded-lg py-2 sm:py-3 px-1">
+                <div className="text-lg sm:text-xl font-bold text-gt1">{x.v}</div>
+                <div className="text-[10px] sm:text-xs text-gt3 mt-1 truncate">{x.l}</div>
               </div>
             ))}
           </div>

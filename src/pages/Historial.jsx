@@ -116,15 +116,15 @@ export default function Historial() {
 
   return (
     <div>
-      <div className="flex justify-between items-start mb-6 gap-4 flex-wrap">
-        <div>
+      <div className="flex justify-between items-start mb-6 gap-3 flex-wrap">
+        <div className="min-w-0">
           <h2 className="section-title">Historial de Mantenimientos</h2>
-          <p className="section-sub">Base de datos completa con filtros avanzados y exportación</p>
+          <p className="section-sub">Filtros avanzados y exportación</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <button className="btn-secondary" onClick={limpiar}>↺ Limpiar filtros</button>
-          <button className="btn-green flex items-center gap-2" onClick={exportar} disabled={exportando || filtered.length === 0}>
-            <span>📥</span> {exportando ? 'Exportando...' : 'Exportar a Excel (.xls)'}
+          <button className="btn-secondary text-xs sm:text-sm" onClick={limpiar}>↺ Limpiar</button>
+          <button className="btn-green flex items-center gap-1 sm:gap-2 text-xs sm:text-sm" onClick={exportar} disabled={exportando || filtered.length === 0}>
+            <span>📥</span> {exportando ? 'Exportando...' : 'Exportar .xls'}
           </button>
         </div>
       </div>
@@ -143,31 +143,31 @@ export default function Historial() {
         ))}
       </div>
 
-      <div className="bg-bg2 border border-gborder rounded-xl p-4 mb-4 flex gap-3 flex-wrap items-center">
-        <div className="flex-1 min-w-[200px]">
+      <div className="bg-bg2 border border-gborder rounded-xl p-3 sm:p-4 mb-4 flex gap-2 sm:gap-3 flex-wrap items-center">
+        <div className="w-full sm:flex-1 sm:w-auto sm:min-w-[200px]">
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar activo, técnico, OC, contratista..."/>
         </div>
-        <select className="input-field w-36" value={filtroTipo}  onChange={e => setFiltroTipo(e.target.value)}>
+        <select className="input-field flex-1 min-w-0 sm:flex-none sm:w-36" value={filtroTipo}  onChange={e => setFiltroTipo(e.target.value)}>
           <option>Todos</option><option>Preventivo</option><option>Correctivo</option>
         </select>
-        <select className="input-field w-36" value={filtroEst}   onChange={e => setFiltroEst(e.target.value)}>
+        <select className="input-field flex-1 min-w-0 sm:flex-none sm:w-36" value={filtroEst}   onChange={e => setFiltroEst(e.target.value)}>
           <option>Todos</option><option>Pendiente</option><option>En proceso</option><option>Completado</option>
         </select>
-        <select className="input-field w-40" value={filtroSede}  onChange={e => setFiltroSede(e.target.value)}>
+        <select className="input-field w-full sm:w-40" value={filtroSede}  onChange={e => setFiltroSede(e.target.value)}>
           <option value="Todas">Todas las sedes</option>
           {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
-        <select className="input-field w-44" value={filtroContr} onChange={e => setFiltroContr(e.target.value)}>
+        <select className="input-field w-full sm:w-44" value={filtroContr} onChange={e => setFiltroContr(e.target.value)}>
           <option value="Todos">Todos los contratistas</option>
           {contUnicos.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <div className="flex items-center gap-2 text-xs text-gt2 whitespace-nowrap">
-          F. desde
-          <input className="input-field w-36" type="date" value={filtroFD} onChange={e => setFiltroFD(e.target.value)}/>
+        <div className="flex items-center gap-2 text-xs text-gt2 flex-1 min-w-0 sm:flex-none">
+          <span className="whitespace-nowrap">F. desde</span>
+          <input className="input-field flex-1 sm:w-36" type="date" value={filtroFD} onChange={e => setFiltroFD(e.target.value)}/>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gt2 whitespace-nowrap">
-          hasta
-          <input className="input-field w-36" type="date" value={filtroFH} onChange={e => setFiltroFH(e.target.value)}/>
+        <div className="flex items-center gap-2 text-xs text-gt2 flex-1 min-w-0 sm:flex-none">
+          <span className="whitespace-nowrap">hasta</span>
+          <input className="input-field flex-1 sm:w-36" type="date" value={filtroFH} onChange={e => setFiltroFH(e.target.value)}/>
         </div>
       </div>
 

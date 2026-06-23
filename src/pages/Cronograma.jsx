@@ -231,10 +231,11 @@ export default function Cronograma() {
 
   return (
     <div>
-      <div className="flex justify-between items-start mb-6 gap-4 flex-wrap">
-        <div>
+      <div className="flex justify-between items-start mb-6 gap-3 flex-wrap">
+        <div className="min-w-0">
           <h2 className="section-title">Cronograma Anual</h2>
-          <p className="section-sub">Haz clic en un mes para elegir su estado: Pendiente, Ejecutado, Reprogramado o Sin asignar</p>
+          <p className="section-sub hidden sm:block">Haz clic en un mes para elegir su estado: Pendiente, Ejecutado, Reprogramado o Sin asignar</p>
+          <p className="section-sub sm:hidden">Toca un mes para cambiar su estado</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 bg-bg2 border border-gborder2 rounded-lg px-3 py-1.5">
@@ -249,20 +250,20 @@ export default function Cronograma() {
       </div>
 
       {/* Leyenda */}
-      <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
-        <div className="flex gap-4 flex-wrap">
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2 sm:gap-3">
+        <div className="flex gap-2 sm:gap-4 flex-wrap">
           {[{ v: 'E', l: 'Ejecutado' }, { v: 'P', l: 'Pendiente' }, { v: 'R', l: 'Reprogramado' }, { v: '·', l: 'Sin asignar' }].map(x => {
             const col = COLS[x.v] || COLS['·']
             return (
-              <div key={x.v} className="flex items-center gap-2 text-xs text-gt2">
-                <div className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border"
+              <div key={x.v} className="flex items-center gap-1.5 text-[10px] sm:text-xs text-gt2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded flex items-center justify-center text-[10px] sm:text-xs font-bold border"
                   style={{ background: col.bg, color: col.text, borderColor: col.bc }}>{x.v}</div>
                 {x.l}
               </div>
             )
           })}
         </div>
-        <div className="w-52">
+        <div className="w-full sm:w-52">
           <SearchBar value={filtro} onChange={setFiltro} placeholder="Buscar activo..."/>
         </div>
       </div>
@@ -350,16 +351,16 @@ export default function Cronograma() {
           </div>
 
           {/* Totales */}
-          <div className="flex gap-3 mt-4 flex-wrap">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4">
             {[
-              { l: 'Activos en cronograma', v: filtrados.length, c: BRAND.primaryLight },
+              { l: 'En cronograma', v: filtrados.length, c: BRAND.primaryLight },
               { l: 'Ejecutados',   v: filtrados.reduce((a, c) => a + Array.from({ length: 12 }, (_, i) => fromBack(c[`mes${i + 1}`])).filter(m => m === 'E').length, 0), c: '#98B752' },
               { l: 'Pendientes',   v: filtrados.reduce((a, c) => a + Array.from({ length: 12 }, (_, i) => fromBack(c[`mes${i + 1}`])).filter(m => m === 'P').length, 0), c: '#d4a017' },
               { l: 'Reprogramados',v: filtrados.reduce((a, c) => a + Array.from({ length: 12 }, (_, i) => fromBack(c[`mes${i + 1}`])).filter(m => m === 'R').length, 0), c: '#a99dd4' },
             ].map((s, i) => (
-              <div key={i} className="bg-bg2 border border-gborder rounded-lg px-4 py-2.5 flex gap-3 items-center">
-                <span className="text-lg font-bold" style={{ color: s.c }}>{s.v}</span>
-                <span className="text-xs text-gt2">{s.l}</span>
+              <div key={i} className="bg-bg2 border border-gborder rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 flex gap-2 sm:gap-3 items-center">
+                <span className="text-base sm:text-lg font-bold" style={{ color: s.c }}>{s.v}</span>
+                <span className="text-[10px] sm:text-xs text-gt2">{s.l}</span>
               </div>
             ))}
           </div>
@@ -373,8 +374,8 @@ export default function Cronograma() {
           <div
             className="fixed z-[2000] bg-bg2 border border-gborder2 rounded-lg shadow-2xl overflow-hidden py-1"
             style={{
-              top: openCell.rect.bottom + 4,
-              left: Math.min(openCell.rect.left, window.innerWidth - 160),
+              top: Math.min(openCell.rect.bottom + 4, window.innerHeight - 200),
+              left: Math.max(8, Math.min(openCell.rect.left, window.innerWidth - 160)),
               minWidth: 150,
             }}
           >
