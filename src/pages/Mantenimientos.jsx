@@ -41,6 +41,19 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
   const getActivo = id => activos.find(a => a.id === id)
   const getSede   = id => sedes.find(s => s.id === id)
 
+  const camposRequeridos = [
+    ['Descripción',     m => m.descripcion],
+    ['F. Programada',   m => m.fecha_prog],
+    ['F. Ejecutada',    m => m.fecha_ejec],
+    ['Gasto',           m => m.gasto > 0],
+    ['Contratista',     m => m.contratista_id],
+    ['Técnico Ejecutor',m => m.tecnico],
+    ['Responsable',     m => m.responsable],
+    ['Doc. Soporte',    m => m.doc_url || m.doc_soporte],
+    ['Orden de Compra', m => m.orden_compra],
+  ]
+  const getFaltantes = (m) => camposRequeridos.filter(([, check]) => !check(m)).map(([label]) => label)
+
   // Abrir modal de "completar" (técnico) con los datos del mantenimiento
   const openComplete = (m) => {
     const act = getActivo(m.activo_id)
@@ -167,9 +180,9 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
 
   // ── Guardar (técnico → completar) ──────────────────────────
   const saveComplete = async () => {
-    const { fechaEjec, descripcion, tecnico, docSoporte, docUrl } = completeForm
-    if (!fechaEjec || !descripcion || !tecnico || (!docSoporte && !docUrl)) {
-      setMsg('Todos los campos son obligatorios, excepto observaciones')
+    const { fechaEjec, descripcion, tecnico, docUrl } = completeForm
+    if (!fechaEjec || !descripcion || !tecnico || !docUrl) {
+      setMsg(!docUrl ? 'Debes adjuntar el documento de soporte (archivo)' : 'Todos los campos son obligatorios, excepto observaciones')
       return
     }
     setMsg('')
@@ -241,7 +254,12 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
           <p className="section-sub">
             {isTecnico
               ? `${filtered.length} pendientes por completar`
-              : `Historial completo · ${mantenimientos.length} registros totales`}
+              : (() => {
+                  const incompletos = mantenimientos.filter(m => getFaltantes(m).length > 0).length
+                  return incompletos > 0
+                    ? <>{mantenimientos.length} registros · <span className="text-amber-400">{incompletos} incompleto{incompletos > 1 ? 's' : ''}</span></>
+                    : `${mantenimientos.length} registros · Todos completos`
+                })()}
           </p>
         </div>
         {!isTecnico && (
@@ -280,15 +298,16 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
               <tr>
                 {(isTecnico
                   ? ['Activo','Sede','Tipo','F. Prog.','Estado','']
-                  : ['Activo','Sede','Tipo','F. Prog.','F. Ejec.','Estado','Gasto','Responsable','Técnico Asignado','OC / Soporte','']
-                ).map(h => <th key={h} className="th">{h}</th>)}
+                  : ['','Activo','Sede','Tipo','F. Prog.','F. Ejec.','Estado','Gasto','Responsable','Técnico Asignado','OC / Soporte','']
+                ).map((h,i) => <th key={h||i} className="th">{h}</th>)}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0
-                ? <tr><td colSpan={isTecnico ? 6 : 11}><Empty text={isTecnico ? 'No tienes mantenimientos pendientes' : 'Sin registros'}/></td></tr>
+                ? <tr><td colSpan={isTecnico ? 6 : 12}><Empty text={isTecnico ? 'No tienes mantenimientos pendientes' : 'Sin registros'}/></td></tr>
                 : filtered.map(m => {
                     const act  = getActivo(m.activo_id)
+                    const faltantes = !isTecnico ? getFaltantes(m) : []
                     // sede_nombre ya viene del JOIN, no hace falta buscar
                     if (isTecnico) return (
                       <tr key={m.id} className="hover:bg-bg3/30 transition-colors">
@@ -310,6 +329,13 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
                     )
                     return (
                       <tr key={m.id} className="hover:bg-bg3/30 transition-colors">
+                        <td className="td" style={{ width: 32, padding: '6px 4px' }}>
+                          {faltantes.length === 0
+                            ? <div className="w-6 h-6 rounded-full bg-green-900/30 border border-green-700/40 flex items-center justify-center text-xs text-ggreen" title="Registro completo">✓</div>
+                            : <div className="w-6 h-6 rounded-full bg-amber-900/30 border border-amber-700/40 flex items-center justify-center text-[10px] font-bold text-amber-400 cursor-help"
+                                   title={`Faltan: ${faltantes.join(', ')}`}>{faltantes.length}</div>
+                          }
+                        </td>
                         <td className="td">
                           <span className="font-bold text-accent3 text-xs">{act?.identificacion || m.activo_identificacion || '–'}</span><br/>
                           <span className="text-xs text-gt3">{(act?.nombre || m.activo_nombre)?.substring(0, 24)}</span>
