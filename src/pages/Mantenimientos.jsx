@@ -298,7 +298,7 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
               <tr>
                 {(isTecnico
                   ? ['Activo','Sede','Tipo','F. Prog.','Estado','']
-                  : ['','Activo','Sede','Tipo','F. Prog.','F. Ejec.','Estado','Gasto','Responsable','Técnico Asignado','OC / Soporte','']
+                  : ['','Activo','Sede','Tipo','F. Prog.','F. Ejec.','Estado','Gasto','Ejecutor','Técnico Asignado','OC / Soporte','']
                 ).map((h,i) => <th key={h||i} className="th">{h}</th>)}
               </tr>
             </thead>
@@ -346,7 +346,7 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
                         <td className="td text-xs">{m.fecha_ejec ? fmtDate(m.fecha_ejec) : <span className="text-gt3">–</span>}</td>
                         <td className="td"><Tag type={m.estado === 'Completado' ? 'done' : m.estado === 'Pendiente' ? 'pend' : 'prog'}>{m.estado}</Tag></td>
                         <td className="td text-xs font-semibold">{m.gasto > 0 ? fmt(m.gasto) : '–'}</td>
-                        <td className="td text-xs text-gt2">{m.responsable || '–'}</td>
+                        <td className="td text-xs text-gt2">{m.tecnico || '–'}</td>
                         <td className="td text-xs text-gt2">{m.tecnico_asignado_nombre || '–'}</td>
                         <td className="td text-xs text-gt3 font-mono">
                           {m.orden_compra && <div>OC: {m.orden_compra}</div>}
