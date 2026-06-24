@@ -62,7 +62,7 @@ export default function Mantenimientos({ pendingActivoId, onClearPending }) {
       id:            m.id,
       fechaEjec:     m.fecha_ejec ? m.fecha_ejec.toString().split('T')[0] : today(),
       descripcion:   m.descripcion   || '',
-      tecnico:       m.tecnico       || session?.nombre || '',
+      tecnico:       m.tecnico       || '',
       observaciones: m.observaciones || '',
       docSoporte:    m.doc_soporte   || '',
       docUrl:        m.doc_url       || '',
