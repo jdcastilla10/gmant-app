@@ -166,7 +166,7 @@ export function Usuarios() {
   const [usuarios, setUsuarios] = useState([])
   const [modal, setModal] = useState(null)
   const [del, setDel]     = useState(null)
-  const [form, setForm]   = useState({ username:'', password:'', nombre:'', rol:'tecnico', email:'', activo: true })
+  const [form, setForm]   = useState({ username:'', password:'', nombre:'', rol:'tecnico', email:'', telegramChatId:'', activo: true })
   const [msg, setMsg]     = useState('')
   const f = v => setForm(p => ({ ...p, ...v }))
 
@@ -185,7 +185,7 @@ export function Usuarios() {
     setMsg('')
     try {
       if (form.id) {
-        const payload = { nombre: form.nombre, rol: form.rol, email: form.email, activo: form.activo }
+        const payload = { nombre: form.nombre, rol: form.rol, email: form.email, telegram_chat_id: form.telegramChatId || null, activo: form.activo }
         if (form.password) payload.password = form.password
         await apiUpdateUsuario(form.id, payload)
       } else {
@@ -205,17 +205,17 @@ export function Usuarios() {
     <div>
       <div className="flex flex-wrap justify-between items-start gap-3 mb-6">
         <div><h2 className="section-title">Usuarios</h2><p className="section-sub">Gestión de accesos al sistema</p></div>
-        <button className="btn-primary" onClick={() => { setForm({ username:'', password:'', nombre:'', rol:'tecnico', email:'', activo:true }); setMsg(''); setModal('form') }}>
+        <button className="btn-primary" onClick={() => { setForm({ username:'', password:'', nombre:'', rol:'tecnico', email:'', telegramChatId:'', activo:true }); setMsg(''); setModal('form') }}>
           + Nuevo Usuario
         </button>
       </div>
       <div className="bg-bg2 border border-gborder rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full text-sm" style={{minWidth:560}}>
-          <thead><tr>{['Nombre','Usuario','Email','Rol','Estado',''].map(h=><th key={h} className="th">{h}</th>)}</tr></thead>
+        <table className="w-full text-sm" style={{minWidth:640}}>
+          <thead><tr>{['Nombre','Usuario','Email','Rol','Telegram','Estado',''].map(h=><th key={h} className="th">{h}</th>)}</tr></thead>
           <tbody>
             {usuarios.length === 0
-              ? <tr><td colSpan={6}><Empty text="Sin usuarios registrados"/></td></tr>
+              ? <tr><td colSpan={7}><Empty text="Sin usuarios registrados"/></td></tr>
               : usuarios.map(u => (
                 <tr key={u.id} className="hover:bg-bg3/30 transition-colors">
                   <td className="td">
@@ -230,10 +230,16 @@ export function Usuarios() {
                   <td className="td text-xs font-mono text-gt2">{u.username}</td>
                   <td className="td text-xs text-accent3">{u.email || '–'}</td>
                   <td className="td"><Tag type={u.rol==='admin'?'prev':'done'}>{u.rol==='admin'?'Administrador':'Técnico'}</Tag></td>
+                  <td className="td text-center">
+                    {u.telegram_chat_id
+                      ? <span className="text-ggreen text-xs" title={`Chat ID: ${u.telegram_chat_id}`}>✓ Vinculado</span>
+                      : <span className="text-gt3 text-xs">–</span>
+                    }
+                  </td>
                   <td className="td"><Tag type={u.activo?'done':'corr'}>{u.activo?'Activo':'Inactivo'}</Tag></td>
                   <td className="td">
                     <div className="flex gap-1.5">
-                      <button className="btn-secondary btn-sm" onClick={() => { setForm({ ...u, password:'' }); setMsg(''); setModal('form') }}>✎</button>
+                      <button className="btn-secondary btn-sm" onClick={() => { setForm({ ...u, password:'', telegramChatId: u.telegram_chat_id || '' }); setMsg(''); setModal('form') }}>✎</button>
                       {u.id !== session?.id && <button className="btn-danger btn-sm" onClick={() => setDel(u)}>✕</button>}
                     </div>
                   </td>
@@ -262,6 +268,15 @@ export function Usuarios() {
                 <select className="input-field" value={String(form.activo)} onChange={e=>f({activo:e.target.value==='true'})}>
                   <option value="true">Activo</option><option value="false">Inactivo</option>
                 </select>
+              </div>
+            )}
+            {form.id && (
+              <div>
+                <label className="form-label">Telegram Chat ID</label>
+                <input className="input-field" value={form.telegramChatId||''} onChange={e=>f({telegramChatId:e.target.value})} placeholder="Se vincula automáticamente desde el bot"/>
+                <p className="text-xs text-gt3 mt-1">
+                  El usuario debe enviar <code className="text-accent3">/start {form.username}</code> al bot en Telegram para vincularse automáticamente.
+                </p>
               </div>
             )}
           </div>
